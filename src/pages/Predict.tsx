@@ -1,14 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Send, MapPin, Building, Wind, AlertCircle } from 'lucide-react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import AQIGauge from '@/components/common/AQIGauge';
-import AQIBadge from '@/components/common/AQIBadge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { api } from '@/services/api';
+import { useState, useEffect } from "react";
+import { Send, MapPin, Building, Wind, AlertCircle } from "lucide-react";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import AQIGauge from "@/components/common/AQIGauge";
+import AQIBadge from "@/components/common/AQIBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import api from "@/services/api";
 
 interface PredictionResult {
   aqi: number;
@@ -24,148 +30,115 @@ interface PredictionResult {
 
 const Predict = () => {
   const [states, setStates] = useState<string[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
-  
+
   const [formData, setFormData] = useState({
-    state: '',
-    city: '',
-    areaType: '',
-    so2: '',
-    no2: '',
-    rspm: '',
+    state: "",
+    city: "",
+    areaType: "",
+    so2: "",
+    no2: "",
+    rspm: "",
   });
 
+  /* LOAD STATES */
   useEffect(() => {
     const fetchStates = async () => {
-      const response = await api.getStates();
-      if (response.success) {
-        setStates(response.states);
-      }
+      const res = await api.getStates();
+      if (res.success) setStates(res.states);
     };
     fetchStates();
   }, []);
 
-  useEffect(() => {
-    const fetchCities = async () => {
-      if (formData.state) {
-        const response = await api.getCitiesByState(formData.state);
-        if (response.success) {
-          setCities(response.cities);
-        }
-      } else {
-        setCities([]);
-      }
-    };
-    fetchCities();
-  }, [formData.state]);
-
+  /* SUBMIT */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setResult(null);
 
     try {
-      const response = await api.predictAQI(formData);
-      if (response.success) {
-        setResult(response.prediction);
-      }
-    } catch (error) {
-      console.error('Prediction failed:', error);
+      const res = await api.predictAQI(formData);
+      if (res.success) setResult(res.prediction);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    if (field === 'state') {
-      setFormData((prev) => ({ ...prev, city: '' }));
-    }
+    setFormData((p) => ({ ...p, [field]: value }));
   };
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      
+
       <main className="flex-1 py-8">
         <div className="container">
-          {/* Page Header */}
-          <div className="mb-8" data-animate="header">
-            <h1 className="font-display text-3xl font-bold text-foreground">AQI Prediction</h1>
-            <p className="mt-2 text-muted-foreground">
-              Enter pollutant values to predict the Air Quality Index for your location
+          {/* HEADER */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold">AQI Prediction</h1>
+            <p className="text-muted-foreground">
+              Enter pollutant values to predict AQI
             </p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-2">
-            {/* Prediction Form */}
-            <div className="aqi-card" data-animate="form">
-              <h2 className="mb-6 font-display text-xl font-semibold text-foreground">
-                Enter Pollutant Data
-              </h2>
-
+            {/* FORM */}
+            <div className="aqi-card">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Location Section */}
+                {/* LOCATION */}
                 <div className="space-y-4">
-                  <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <h3 className="flex items-center gap-2 text-sm font-medium">
                     <MapPin className="h-4 w-4" />
                     Location Details
                   </h3>
-                  
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="state">State</Label>
-                      <Select
-                        value={formData.state}
-                        onValueChange={(value) => handleInputChange('state', value)}
-                      >
-                        <SelectTrigger id="state">
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {states.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Select
-                        value={formData.city}
-                        onValueChange={(value) => handleInputChange('city', value)}
-                        disabled={!formData.state}
-                      >
-                        <SelectTrigger id="city">
-                          <SelectValue placeholder="Select city" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cities.map((city) => (
-                            <SelectItem key={city} value={city}>
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Select
+                      value={formData.state}
+                      onValueChange={(v) =>
+                        handleInputChange("state", v)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {states.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* CITY = INPUT (as requested) */}
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      placeholder="Enter city name"
+                      value={formData.city}
+                      onChange={(e) =>
+                        handleInputChange("city", e.target.value)
+                      }
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="areaType">Area Type</Label>
+                    <Label>Area Type</Label>
                     <Select
                       value={formData.areaType}
-                      onValueChange={(value) => handleInputChange('areaType', value)}
+                      onValueChange={(v) =>
+                        handleInputChange("areaType", v)
+                      }
                     >
-                      <SelectTrigger id="areaType">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select area type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -178,59 +151,26 @@ const Predict = () => {
                   </div>
                 </div>
 
-                {/* Pollutant Values Section */}
-                <div className="space-y-4 border-t border-border pt-6">
-                  <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Building className="h-4 w-4" />
-                    Pollutant Concentrations (μg/m³)
-                  </h3>
-
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="so2">SO₂</Label>
+                {/* POLLUTANTS */}
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {["so2", "no2", "rspm"].map((p) => (
+                    <div key={p} className="space-y-2">
+                      <Label>{p.toUpperCase()}</Label>
                       <Input
-                        id="so2"
                         type="number"
-                        step="0.1"
                         min="0"
-                        placeholder="e.g., 12.5"
-                        value={formData.so2}
-                        onChange={(e) => handleInputChange('so2', e.target.value)}
+                        step="0.1"
+                        value={formData[p as keyof typeof formData]}
+                        onChange={(e) =>
+                          handleInputChange(p, e.target.value)
+                        }
                         required
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="no2">NO₂</Label>
-                      <Input
-                        id="no2"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        placeholder="e.g., 25.8"
-                        value={formData.no2}
-                        onChange={(e) => handleInputChange('no2', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="rspm">RSPM</Label>
-                      <Input
-                        id="rspm"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        placeholder="e.g., 85.2"
-                        value={formData.rspm}
-                        onChange={(e) => handleInputChange('rspm', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                <Button className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
                       <Wind className="mr-2 h-4 w-4 animate-spin" />
@@ -246,60 +186,53 @@ const Predict = () => {
               </form>
             </div>
 
-            {/* Results Panel */}
+            {/* RESULT + ADVISORY */}
             <div className="space-y-6">
               {result ? (
                 <>
-                  {/* AQI Result Card */}
-                  <div className="aqi-card" data-animate="result">
-                    <h2 className="mb-6 font-display text-xl font-semibold text-foreground">
+                  {/* Prediction Result */}
+                  <div className="aqi-card flex flex-col items-center text-center">
+                    <h2 className="mb-4 text-xl font-semibold">
                       Prediction Result
                     </h2>
 
-                    <div className="flex flex-col items-center">
-                      <AQIGauge value={result.aqi} category={result.category} size="lg" />
-                      
-                      <div className="mt-6 text-center">
-                        <AQIBadge category={result.category} size="lg" />
-                        <p className="mt-4 text-sm text-muted-foreground">
-                          {result.location.city}, {result.location.state}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {result.location.areaType} Area
-                        </p>
-                      </div>
+                    <AQIGauge
+                      value={result.aqi}
+                      category={result.category}
+                      size="lg"
+                    />
+
+                    <div className="mt-4">
+                      <AQIBadge
+                        category={result.category}
+                        size="lg"
+                      />
+                      <p className="mt-2 text-sm">
+                        {result.location.city}, {result.location.state}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {result.location.areaType} Area
+                      </p>
                     </div>
                   </div>
 
-                  {/* Health Advisory Card */}
-                  <div className="aqi-card" data-animate="advisory">
-                    <h2 className="mb-4 font-display text-xl font-semibold text-foreground">
+                  {/* Health Advisorygit */}
+                  <div className="aqi-card">
+                    <h2 className="mb-2 text-xl font-semibold">
                       Health Advisory
                     </h2>
-                    
-                    <div className="flex items-start gap-4 rounded-lg bg-secondary/50 p-4">
-                      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                      <p className="text-sm leading-relaxed text-muted-foreground">
+                    <div className="flex gap-3">
+                      <AlertCircle className="h-5 w-5 text-primary" />
+                      <p className="text-sm text-muted-foreground">
                         {result.healthRisk}
                       </p>
                     </div>
-
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Predicted at: {new Date(result.timestamp).toLocaleString()}
-                    </p>
                   </div>
                 </>
               ) : (
-                <div className="aqi-card flex min-h-[400px] flex-col items-center justify-center text-center" data-animate="placeholder">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-                    <Wind className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
-                    No Prediction Yet
-                  </h3>
-                  <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-                    Enter the pollutant values and location details to get an AQI prediction
-                  </p>
+                <div className="aqi-card text-center">
+                  <Wind className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="mt-2">No prediction yet</p>
                 </div>
               )}
             </div>
