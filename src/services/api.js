@@ -122,4 +122,37 @@ export const api = {
   },
 };
 
+const AQICN_TOKEN = import.meta.env.VITE_AQICN_TOKEN;
+
+export const getAQITrends = async (city, days = 7) => {
+  // AQICN sirf current + recent data deta hai
+  // Hum "pseudo trend" banayenge (acceptable for Option A)
+
+  const url = `https://api.waqi.info/feed/${city}/?token=${AQICN_TOKEN}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.status !== "ok") {
+    throw new Error("AQI data fetch failed");
+  }
+
+  const baseAQI = data.data.aqi;
+
+  // Fake last 7 days trend (UI + demo purpose)
+  const trends = Array.from({ length: days }).map((_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - i));
+
+    return {
+      date: date.toISOString(),
+      aqi: Math.max(20, baseAQI + Math.floor(Math.random() * 30 - 15)),
+    };
+  });
+
+  return {
+    success: true,
+    trends,
+  };
+};
+
 export default api;
