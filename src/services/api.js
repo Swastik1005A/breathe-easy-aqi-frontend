@@ -60,7 +60,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         state: data.state,
-        location: data.city,      // city is free-text now
+        location: data.city,
         area_type: data.areaType,
         so2: Number(data.so2),
         no2: Number(data.no2),
@@ -122,14 +122,16 @@ export const api = {
   },
 };
 
-const AQICN_TOKEN = import.meta.env.VITE_AQICN_TOKEN;
-
+/* =========================
+   AQI TRENDS (FIXED)
+========================= */
 export const getAQITrends = async (city, days = 7) => {
-  // AQICN sirf current + recent data deta hai
-  // Hum "pseudo trend" banayenge (acceptable for Option A)
+  const res = await fetch(`${API_BASE_URL}/aqi-trends/${city}`);
 
-  const url = `https://api.waqi.info/feed/${city}/?token=${AQICN_TOKEN}`;
-  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error("Failed to fetch AQI trends");
+  }
+
   const data = await res.json();
 
   if (data.status !== "ok") {
@@ -138,7 +140,7 @@ export const getAQITrends = async (city, days = 7) => {
 
   const baseAQI = data.data.aqi;
 
-  // Fake last 7 days trend (UI + demo purpose)
+  // Pseudo trend for UI (backend gives current AQI)
   const trends = Array.from({ length: days }).map((_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (days - i));
